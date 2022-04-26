@@ -59,7 +59,7 @@ b.y_pos = screen_height - b.height - stage_height   # 현재 y좌표
 
 # 적 캐릭터의 랜덤 행동 부분
 rnd_ticks = 0
-rnd_delay = 1
+rnd_delay = 1.5
 rnd_bool = True
 
 game_result = 'Quit'
@@ -175,11 +175,29 @@ while running:
 
     # 타이머
     elapsed_time = (pygame.time.get_ticks() - start_ticks) / 1000
-    timer = game_font.render('{}'.format(int(total_time - elapsed_time)), True, (255, 255, 0))
+    current_time = int(total_time - elapsed_time)
+    if current_time < 10:
+        time_text = '0' + str(current_time)
+        timer = game_font.render(time_text, True, (255, 0, 0))
+    else:
+        time_text = str(current_time)
+        timer = game_font.render(time_text, True, (0, 0, 0))
     screen.blit(timer, (460, 45))
 
+    # 타임 아웃 시 체력이 더 많은 캐릭터가 승리, 체력이 같으면 무승부
     if total_time - elapsed_time <= 0:
-        game_result = 'Time out'
+        if a.hp > b.hp:
+            winner = a.name
+        elif b.hp > a.hp:
+            winner = b.name
+        else:
+            winner = 0
+
+        if winner == 0:
+            game_result = f'Time out - Draw'
+        else:
+            game_result = f'Time out - Winner {winner}'
+
         running = False
 
     pygame.display.update() # 게임 화면 업데이트
