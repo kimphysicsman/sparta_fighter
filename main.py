@@ -46,13 +46,13 @@ total_time = 60
 start_ticks = pygame.time.get_ticks()
 
 # 사용자 캐릭터
-a = common.Fighter(images_path, 'character_a.png')
+a = common.Fighter(images_path, 'character.png')
 a.name = '1p'
 a.x_pos = screen_width / 3 - a.width / 2            # 현재 x좌표
 a.y_pos = screen_height - a.height - stage_height   # 현재 y좌표
 
 # 적 캐릭터
-b = common.Fighter(images_path, 'character_b.png')
+b = common.Fighter(images_path, 'character.png')
 b.name = '2p'
 b.x_pos = screen_width * 2 / 3 - b.width / 2        # 현재 x좌표
 b.y_pos = screen_height - b.height - stage_height   # 현재 y좌표

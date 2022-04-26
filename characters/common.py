@@ -15,6 +15,7 @@ class Fighter:
     vector = 100         # 캐릭터가 바라보는 방향 - -100:왼쪽, 100:오른쪽
     defend_mode = 0      # 수비모드 - 0:수비안함, 1:상단수비, 2:중단수비, 3:하단수비
     attack_mode = 0      # 공격모드 - 0:공격안함, 1:상단공격, 2:중단공격, 3:하단공격
+    hit_mode = False     # 피격상태 - False:피격중아님, True: 피격중임
     high_rage = 60       # 상단 범위
     middle_rage = 120    # 중단 범위
     low_rage = 90        # 하단 범위
@@ -23,14 +24,20 @@ class Fighter:
 
     # 공격시 다음 공격까지 쿨타임
     attack_bool = False  # 쿨타임 중인지 여부
-    attack_delay = 0.5   # 쿨타임 시간
+    attack_delay = 1     # 쿨타임 시간
     attack_ticks = 0     # 공격 성공한 시간
     attack_temp = 0      # 공격의 종류를 담는 변수
+
+    # 피격 쿨타임
+    hit_delay = 0.5      # 쿨타임 시간
+    hit_ticks = 0        # 피격당한 시간
+
 
     # pygame 캐릭터 생성
     # images_path : 캐릭터 이지미 경로 / image : 이미지 명
     def __init__(self, images_path, image):
         self.char = pygame.image.load(os.path.join(images_path, image))
+        self.hit_img = pygame.image.load(os.path.join(images_path, 'character_hit.png'))
         self.attack_high_img = pygame.image.load(os.path.join(images_path, 'attack_high.png'))
         self.attack_middle_img = pygame.image.load(os.path.join(images_path, 'attack_middle.png'))
         self.attack_low_img = pygame.image.load(os.path.join(images_path, 'attack_low.png'))
@@ -59,17 +66,15 @@ class Fighter:
     # attack_type : 공격 종류 - 1:상단, 2:중단, 3:하단
     # enemy : 적의 캐릭터
     def attack(self, attack_type, enemy):
-        if attack_type == 1:
-            if self.attack_check(1, enemy):
-                enemy.damage(15)
+        if self.attack_check(attack_type, enemy):
+            if attack_type == 1:
+                enemy.get_hit(1)
                 print(f'상단 공격 성공! {self.name} hp : {self.hp} / {enemy.name} hp : {enemy.hp}')
-        elif attack_type == 2:
-            if self.attack_check(2, enemy):
-                enemy.damage(5)
+            elif attack_type == 2:
+                enemy.get_hit(2)
                 print(f'중단 공격 성공! {self.name} hp : {self.hp} / {enemy.name} hp : {enemy.hp}')
-        elif attack_type == 3:
-            if self.attack_check(3, enemy):
-                enemy.damage(10)
+            else:
+                enemy.get_hit(3)
                 print(f'하단 공격 성공! {self.name} hp : {self.hp} / {enemy.name} hp : {enemy.hp}')
 
     # 공격 성공 여부 체크
@@ -118,6 +123,19 @@ class Fighter:
                     return False
             return True
 
+    # 피격 판정
+    # hit_type : 받은 공격의 종류 - 1:상단, 2:중단, 3:하단
+    def get_hit(self, hit_type):
+        if hit_type == 1:
+            self.damage(15)
+        elif hit_type == 2:
+            self.damage(5)
+        else:
+            self.damage(10)
+        self.hit_ticks = pygame.time.get_ticks()
+        self.hit_mode = True
+
+
     # 캐릭터 그리기
     # screen        : 화면
     # enemy         : 적의 캐릭터
@@ -126,53 +144,61 @@ class Fighter:
     # attack_ticks  : 공격 성공한 시간
     # attack_temp   : 공격의 종류를 담는 변수
     def draw_char(self, screen, enemy):
-        screen.blit(self.char, (self.x_pos, self.y_pos))
+        if self.hit_mode:
+            # 피격 상태이면 다른 행동 못함
+            screen.blit(self.hit_img, (self.x_pos, self.y_pos))
+            hit_time = (pygame.time.get_ticks() - self.hit_ticks) / 1000
+            if hit_time > self.hit_delay:
+                self.hit_mode = False
+                self.hit_ticks = 0
+        else:
+            screen.blit(self.char, (self.x_pos, self.y_pos))
 
-        # 공격 그리기
-        # 수비 중이 아닐 때만 가능
-        # 현재 시간 - 공격 성공한 시간 > 쿨타임 시간 : 공격 다시 가능
-        if self.defend_mode == 0:
-            cool_time = (pygame.time.get_ticks() - self.attack_ticks) / 1000
-            if cool_time > self.attack_delay:
-                self.attack_bool = False
-                self.attack_mode = 0
-            else:
-                if self.attack_mode == 1:
-                    screen.blit(self.attack_high_img, (self.x_pos + self.vector, self.y_pos))
-                elif self.attack_mode == 2:
-                    screen.blit(self.attack_middle_img, (self.x_pos + self.vector, self.y_pos + self.high_rage))
-                elif self.attack_mode == 3:
-                    screen.blit(self.attack_low_img, (self.x_pos + self.vector, self.y_pos + self.high_rage + self.middle_rage))
-
-            if not self.attack_bool:
-                if self.attack_temp == 1:
-                    screen.blit(self.attack_high_img, (self.x_pos + self.vector, self.y_pos))
-                    self.attack(self.attack_temp, enemy)
-                    self.attack_bool = True
-                    self.attack_ticks = pygame.time.get_ticks()
-                    self.attack_mode = 1
-                elif self.attack_temp == 2:
-                    screen.blit(self.attack_middle_img, (self.x_pos + self.vector, self.y_pos + self.high_rage))
-                    self.attack(self.attack_temp, enemy)
-                    self.attack_bool = True
-                    self.attack_ticks = pygame.time.get_ticks()
-                    self.attack_mode = 2
-                elif self.attack_temp == 3:
-                    screen.blit(self.attack_low_img, (self.x_pos + self.vector, self.y_pos + self.high_rage + self.middle_rage))
-                    self.attack(self.attack_temp, enemy)
-                    self.attack_bool = True
-                    self.attack_ticks = pygame.time.get_ticks()
-                    self.attack_mode = 3
-
-        # 수비 그리기
-        # 공격 중이 아닐 때, 점프 중이 아닐 때만 가능
-        if self.attack_mode == 0:
-            if self.defend_mode == 1:
-                screen.blit(self.defend_high_img, (self.x_pos, self.y_pos))
-            elif self.defend_mode == 2:
-                screen.blit(self.defend_middle_img, (self.x_pos, self.y_pos + self.high_rage))
-            elif self.defend_mode == 3:
-                screen.blit(self.defend_low_img, (self.x_pos, self.y_pos + self.high_rage + self.middle_rage))
+            # 공격 그리기
+            # 수비 중이 아닐 때만 가능
+            #             # 현재 시간 - 공격 성공한 시간 > 쿨타임 시간 : 공격 다시 가능
+            if self.defend_mode == 0:
+                cool_time = (pygame.time.get_ticks() - self.attack_ticks) / 1000
+                if cool_time > self.attack_delay:
+                    self.attack_bool = False
+                    self.attack_mode = 0
+                else:
+                    if self.attack_mode == 1:
+                        screen.blit(self.attack_high_img, (self.x_pos + self.vector, self.y_pos))
+                    elif self.attack_mode == 2:
+                        screen.blit(self.attack_middle_img, (self.x_pos + self.vector, self.y_pos + self.high_rage))
+                    elif self.attack_mode == 3:
+                        screen.blit(self.attack_low_img, (self.x_pos + self.vector, self.y_pos + self.high_rage + self.middle_rage))
+    
+                if not self.attack_bool:
+                    if self.attack_temp == 1:
+                        screen.blit(self.attack_high_img, (self.x_pos + self.vector, self.y_pos))
+                        self.attack(self.attack_temp, enemy)
+                        self.attack_bool = True
+                        self.attack_ticks = pygame.time.get_ticks()
+                        self.attack_mode = 1
+                    elif self.attack_temp == 2:
+                        screen.blit(self.attack_middle_img, (self.x_pos + self.vector, self.y_pos + self.high_rage))
+                        self.attack(self.attack_temp, enemy)
+                        self.attack_bool = True
+                        self.attack_ticks = pygame.time.get_ticks()
+                        self.attack_mode = 2
+                    elif self.attack_temp == 3:
+                        screen.blit(self.attack_low_img, (self.x_pos + self.vector, self.y_pos + self.high_rage + self.middle_rage))
+                        self.attack(self.attack_temp, enemy)
+                        self.attack_bool = True
+                        self.attack_ticks = pygame.time.get_ticks()
+                        self.attack_mode = 3
+    
+            # 수비 그리기
+            # 공격 중이 아닐 때, 점프 중이 아닐 때만 가능
+            if self.attack_mode == 0:
+                if self.defend_mode == 1:
+                    screen.blit(self.defend_high_img, (self.x_pos, self.y_pos))
+                elif self.defend_mode == 2:
+                    screen.blit(self.defend_middle_img, (self.x_pos, self.y_pos + self.high_rage))
+                elif self.defend_mode == 3:
+                    screen.blit(self.defend_low_img, (self.x_pos, self.y_pos + self.high_rage + self.middle_rage))
 
     # 캐릭터 이동
     # screen_height : 화면 높이
