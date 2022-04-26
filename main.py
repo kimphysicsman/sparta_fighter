@@ -121,7 +121,6 @@ while running:
     if rnd_bool and not b.hit_bool:    # 공격 / 수비가 가능하면
         rnd_ticks = pygame.time.get_ticks()
         rnd_bool = False
-        print(rnd_ticks, rnd_bool)
         if rnd1 == 1:      # rnd1, rnd2에 따라 공격 또는 수비
             b.attack_temp = rnd2
         else:

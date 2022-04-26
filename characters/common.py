@@ -45,6 +45,8 @@ class Fighter:
     jump_bool = False  # 점프 중인지 판단하는 변수 - True:점프중, False:점프중아님
     hit_bool = False  # 피격 상태 여부 - True:피격중, False:피격중아님
 
+    position = -1   # 캐릭터의 적과의 상대적 위치 - -1:왼쪽, 1:오른쪽
+
     # statuses = ('none', 'ready', 'attack', 'hit', 'jump')
 
     # pygame 캐릭터 생성
@@ -89,15 +91,16 @@ class Fighter:
     def attack(self, attack_type, enemy):
         if self.attack_check(attack_type, enemy):
             critical = False  # 크리티컬 발생 유무
-            critical_p = random.randint(1, 1 / self.critical_p)
-            if critical_p == 1:
+            p = random.randint(1, int(1 / self.critical_p))
+            if p == 1:
                 critical = True
-            if attack_type == 1:
-                enemy.get_hit(1, critical, self)
-            elif attack_type == 2:
-                enemy.get_hit(2, critical, self)
+            if critical:
+                damage = enemy.critical_d * enemy.damages[attack_type]
+                enemy.critical_hit = True
             else:
-                enemy.get_hit(3, critical, self)
+                damage = self.damages[attack_type]
+
+            enemy.get_hit(attack_type, damage)
 
     # 공격 성공 여부 체크
     # attack_type : 공격 종류 - 1:상단, 2:중단, 3:하단
@@ -144,6 +147,7 @@ class Fighter:
                         enemy.effect_bool = True
                         enemy.effect_ticks = pygame.time.get_ticks()
                         return False
+                    return True
             else:
                 return False
         else:
@@ -151,13 +155,8 @@ class Fighter:
 
     # 피격 판정
     # hit_type : 받은 공격의 종류 - 1:상단, 2:중단, 3:하단
-    def get_hit(self, hit_type, critical, enemy):
+    def get_hit(self, hit_type, damage):
         if not self.hit_bool:
-            if critical:
-                damage = enemy.critical_d * enemy.damages[hit_type]
-                self.critical_hit = True
-            else:
-                damage = self.damages[hit_type]
             self.damage(damage)
             self.hit_ticks = pygame.time.get_ticks()
             self.hit_bool = True
@@ -181,21 +180,21 @@ class Fighter:
             hit_time = (pygame.time.get_ticks() - self.hit_ticks) / 1000
             if hit_time < self.effect_delay:
                 if self.hit_type == 1:
-                    screen.blit(self.attack_effect, (self.x_pos + 50 * self.vector / 100, self.y_pos - 50))
+                    screen.blit(self.attack_effect, (self.x_pos + 50 * -1 * self.position, self.y_pos - 50))
                     if self.critical_hit:
-                        screen.blit(self.critical_effect, (self.x_pos + 50 * self.vector / 100, self.y_pos - 50))
+                        screen.blit(self.critical_effect, (self.x_pos + 50 * -1 * self.position, self.y_pos - 50))
                 elif self.hit_type == 2:
                     screen.blit(self.attack_effect,
-                                (self.x_pos + 50 * self.vector / 100, self.y_pos - 50 + self.high_rage))
+                                (self.x_pos + 50 * -1 * self.position, self.y_pos - 50 + self.high_rage))
                     if self.critical_hit:
                         screen.blit(self.critical_effect,
-                                    (self.x_pos + 50 * self.vector / 100, self.y_pos - 50 + self.high_rage))
+                                    (self.x_pos + 50 * -1 * self.position, self.y_pos - 50 + self.high_rage))
                 elif self.hit_type == 3:
                     screen.blit(self.attack_effect, (
-                    self.x_pos + 50 * self.vector / 100, self.y_pos - 50 + self.high_rage + self.middle_rage))
+                    self.x_pos + 50 * -1 * self.position, self.y_pos - 50 + self.high_rage + self.middle_rage))
                     if self.critical_hit:
                         screen.blit(self.critical_effect, (
-                        self.x_pos + 50 * self.vector / 100, self.y_pos - 50 + self.high_rage + self.middle_rage))
+                        self.x_pos + 50 * -1 * self.position, self.y_pos - 50 + self.high_rage + self.middle_rage))
             if hit_time > self.hit_delay:
                 self.hit_bool = False
                 self.hit_ticks = 0
@@ -261,13 +260,13 @@ class Fighter:
                     defend_time = (pygame.time.get_ticks() - self.effect_ticks) / 1000
                     if defend_time < self.effect_delay:
                         if self.defend_mode == 1:
-                            screen.blit(self.defend_effect, (self.x_pos + 50 * self.vector / 100, self.y_pos - 20))
+                            screen.blit(self.defend_effect, (self.x_pos + 50 * -1 * self.position, self.y_pos - 20))
                         elif self.defend_mode == 2:
                             screen.blit(self.defend_effect,
-                                        (self.x_pos + 50 * self.vector / 100, self.y_pos + self.high_rage + 20))
+                                        (self.x_pos + 50 * -1 * self.position, self.y_pos + self.high_rage + 20))
                         elif self.defend_mode == 3:
                             screen.blit(self.defend_effect,
-                                        (self.x_pos + 50 * self.vector / 100,
+                                        (self.x_pos + 50 * -1 * self.position,
                                          self.y_pos + self.high_rage + self.middle_rage - 10))
 
                     else:
@@ -295,7 +294,7 @@ class Fighter:
             self.x_pos += self.to_x
 
         if self.hit_bool:
-            self.x_pos += self.vector * -1 / 1500 * dt
+            self.x_pos += self.position / 15 * dt
 
         if self.x_pos < 0:  # 벽에 막힐 경우
             self.x_pos = 0
