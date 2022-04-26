@@ -3,6 +3,7 @@ import os
 
 # 파이터 캐릭터 클래스
 class Fighter:
+    name = 'empty'
     hp = 100             # 캐릭터 체력
     alive = True         # 살아있는지 여부
     to_x = 0             # x방향 백터
@@ -60,16 +61,16 @@ class Fighter:
     def attack(self, attack_type, enemy):
         if attack_type == 1:
             if self.attack_check(1, enemy):
-                enemy.damage(25)
-                print(f'상단 공격 성공! my hp : {self.hp} / enemy hp : {enemy.hp}')
+                enemy.damage(15)
+                print(f'상단 공격 성공! {self.name} hp : {self.hp} / {enemy.name} hp : {enemy.hp}')
         elif attack_type == 2:
             if self.attack_check(2, enemy):
-                enemy.damage(15)
-                print(f'중단 공격 성공! my hp : {self.hp} / enemy hp : {enemy.hp}')
+                enemy.damage(5)
+                print(f'중단 공격 성공! {self.name} hp : {self.hp} / {enemy.name} hp : {enemy.hp}')
         elif attack_type == 3:
             if self.attack_check(3, enemy):
-                enemy.damage(20)
-                print(f'하단 공격 성공! my hp : {self.hp} / enemy hp : {enemy.hp}')
+                enemy.damage(10)
+                print(f'하단 공격 성공! {self.name} hp : {self.hp} / {enemy.name} hp : {enemy.hp}')
 
     # 공격 성공 여부 체크
     # attack_type : 공격 종류 - 1:상단, 2:중단, 3:하단

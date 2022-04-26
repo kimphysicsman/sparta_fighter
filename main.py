@@ -34,18 +34,26 @@ stage = pygame.image.load(os.path.join(images_path, 'stage.png'))
 stage_size = stage.get_rect().size
 stage_height = stage_size[1]
 
+# 체력바
+hp_bar = pygame.image.load(os.path.join(images_path, 'hp_bar.png'))
+hp_point = pygame.image.load(os.path.join(images_path, 'hp_point.png'))
+hp_point_red = pygame.image.load(os.path.join(images_path, 'hp_point_red.png'))
+
+
 # 폰트
-game_font = pygame.font.Font(None, 40)
-total_time = 100
+game_font = pygame.font.Font(None, 100)
+total_time = 60
 start_ticks = pygame.time.get_ticks()
 
 # 사용자 캐릭터
 a = common.Fighter(images_path, 'character_a.png')
-a.x_pos = screen_width / 2 - a.width / 2            # 현재 x좌표
+a.name = '1p'
+a.x_pos = screen_width / 3 - a.width / 2            # 현재 x좌표
 a.y_pos = screen_height - a.height - stage_height   # 현재 y좌표
 
 # 적 캐릭터
 b = common.Fighter(images_path, 'character_b.png')
+b.name = '2p'
 b.x_pos = screen_width * 2 / 3 - b.width / 2        # 현재 x좌표
 b.y_pos = screen_height - b.height - stage_height   # 현재 y좌표
 
@@ -53,6 +61,8 @@ b.y_pos = screen_height - b.height - stage_height   # 현재 y좌표
 rnd_ticks = 0
 rnd_delay = 1
 rnd_bool = True
+
+game_result = 'Quit'
 
 # 이벤트 루프
 running = True   # 게임 진행 변수
@@ -109,29 +119,64 @@ while running:
     # 랜덤 행동
     rnd1 = random.randint(1, 2)
     rnd2 = random.randint(1, 3)
-    if rnd_bool:
+    b.vector = -100
+    if rnd_bool:    # 공격 / 수비가 가능하면
         rnd_ticks = pygame.time.get_ticks()
         rnd_bool = False
-        if rnd1 == 1:
-            b.attack_mode = rnd2
+        if rnd1 == 1:      # rnd1, rnd2에 따라 공격 또는 수비
+            b.attack_temp = rnd2
         else:
             b.defend_mode = rnd2
     else:
         if (pygame.time.get_ticks() - rnd_ticks) / 1000 > rnd_delay:
-            b.attack_mode = 0
             b.defend_mode = 0
+            b.attack_temp = 0
             rnd_bool = True
+
 
     b.draw_char(screen, a)
 
+    # 체력바 그리기
+    screen.blit(hp_bar, (50, 50))
+    screen.blit(hp_bar, (550, 50))
+
+    if a.hp > 0:
+        a_hp_width = a.hp / 100 * 400
+        a_hp_x_pos = 450 - a_hp_width
+        while a_hp_width > 0:
+            a_hp_width -= 20
+            if a.hp > 30:
+                screen.blit(hp_point, (a_hp_x_pos, 50))
+            else:
+                screen.blit(hp_point_red, (a_hp_x_pos, 50))
+            a_hp_x_pos += 20
+
+    if b.hp > 0:
+        b_hp_width = b.hp / 100 * 400
+        b_hp_x_pos = 550
+        while b_hp_width > 0:
+            b_hp_width -= 20
+            if b.hp > 30:
+                screen.blit(hp_point, (b_hp_x_pos, 50))
+            else:
+                screen.blit(hp_point_red, (b_hp_x_pos, 50))
+            b_hp_x_pos += 20
+
     # 생사여부 판단 후 게임 종료
     if not a.status_check() or not b.status_check():
+        if a.status_check():
+            winner = a.name
+            loser = b.name
+        else:
+            winner = b.name
+            loser = a.name
+        game_result = f'Winner : {winner}'
         running = False
 
     # 타이머
     elapsed_time = (pygame.time.get_ticks() - start_ticks) / 1000
-    timer = game_font.render('Time : {}'.format(int(total_time - elapsed_time)), True, (255, 255, 255))
-    screen.blit(timer, (10, 10))
+    timer = game_font.render('{}'.format(int(total_time - elapsed_time)), True, (255, 255, 0))
+    screen.blit(timer, (460, 45))
 
     if total_time - elapsed_time <= 0:
         game_result = 'Time out'
@@ -140,9 +185,13 @@ while running:
     pygame.display.update() # 게임 화면 업데이트
 
 # 게임 결과 출력
+msg = game_font.render(game_result, True, (255, 255, 255))
+msg_rect = msg.get_rect(center=(int(screen_width/2), int(screen_height/2)))
+screen.blit(msg, msg_rect)
+pygame.display.update()
 
-# # 종료시 2초 대기후 종료
-# pygame.time.delay(2000)
+# 종료시 2초 대기후 종료
+pygame.time.delay(2000)
 
 # pygame 종료
 pygame.quit()
