@@ -29,8 +29,8 @@ class Fighter:
     attack_temp = 0      # 공격의 종류를 담는 변수
 
     # 피격 쿨타임
-    hit_delay = 0.5      # 쿨타임 시간
-    hit_ticks = 0        # 피격당한 시간
+    hit_delay = 0.9      # 피격 당하는 시간
+    hit_ticks = 0        # 피격 당한 시간
 
 
     # pygame 캐릭터 생성
