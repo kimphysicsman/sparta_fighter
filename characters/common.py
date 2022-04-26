@@ -22,7 +22,7 @@ class Fighter:
     middle_rage = 120  # 중단 범위
     low_rage = 90  # 하단 범위
     damages = [0, 15, 5, 10]  # 0, 상단, 중단, 하단 공격 데미지
-    critical_p = 0.5  # 크리티컬 확률 (10%)
+    critical_p = 4  # 크리티컬 확률 = 1/critical_p
     critical_d = 2  # 크리티컬 데미지 (2배)
 
     # 공격 모션
@@ -91,16 +91,15 @@ class Fighter:
     def attack(self, attack_type, enemy):
         if self.attack_check(attack_type, enemy):
             critical = False  # 크리티컬 발생 유무
-            p = random.randint(1, int(1 / self.critical_p))
+            p = random.randint(1, self.critical_p)
             if p == 1:
                 critical = True
             if critical:
-                damage = enemy.critical_d * enemy.damages[attack_type]
-                enemy.critical_hit = True
+                damage = self.critical_d * self.damages[attack_type]
             else:
                 damage = self.damages[attack_type]
 
-            enemy.get_hit(attack_type, damage)
+            enemy.get_hit(attack_type, critical, damage)
 
     # 공격 성공 여부 체크
     # attack_type : 공격 종류 - 1:상단, 2:중단, 3:하단
@@ -155,7 +154,7 @@ class Fighter:
 
     # 피격 판정
     # hit_type : 받은 공격의 종류 - 1:상단, 2:중단, 3:하단
-    def get_hit(self, hit_type, damage):
+    def get_hit(self, hit_type, critical, damage):
         if not self.hit_bool:
             self.damage(damage)
             self.hit_ticks = pygame.time.get_ticks()
@@ -165,6 +164,7 @@ class Fighter:
             self.attack_mode = 0
             self.ready_bool = 0
             self.jump_bool = 0
+            self.critical_hit = critical
 
     # 캐릭터 그리기
     # screen        : 화면
