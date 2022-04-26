@@ -3,8 +3,6 @@ import random
 import pygame
 import os
 from characters import common
-from random import randint
-
 ##########################################################
 # 초기화 (반드시 필요)
 pygame.init()
@@ -59,7 +57,7 @@ b.y_pos = screen_height - b.height - stage_height   # 현재 y좌표
 
 # 적 캐릭터의 랜덤 행동 부분
 rnd_ticks = 0
-rnd_delay = 1.5
+rnd_delay = 3
 rnd_bool = True
 
 game_result = 'Quit'
@@ -74,28 +72,29 @@ while running:
         if event.type == pygame.QUIT:  # 종료 이벤트
             running = False
         if event.type == pygame.KEYDOWN:        # 버튼이 눌렸을 때
-            if event.key == pygame.K_LEFT:      # <- 방향키일 때
-                a.to_x -= a.x_speed * dt
-                a.vector = -100
-            elif event.key == pygame.K_RIGHT:   # -> 방향키일 때
-                a.to_x += a.x_speed * dt
-                a.vector = 100
-            elif event.key == pygame.K_UP:  # up 방향키일 때
-                if a.y_pos == screen_height - stage_height - a.height:
-                    a.to_y += a.y_speed * dt
-                    a.jump_bool = True
-            elif event.key == pygame.K_z:   # z 키가 눌리면 상단 공격
-                a.attack_temp = 1
-            elif event.key == pygame.K_x:   # x 키가 눌리면 중단 공격
-                a.attack_temp = 2
-            elif event.key == pygame.K_c:   # c 키가 눌리면 하단 공격
-                a.attack_temp = 3
-            elif event.key == pygame.K_a:  # a 키가 눌리면 상단 수비
-                a.defend_mode = 1
-            elif event.key == pygame.K_s:  # b 키가 눌리면 중단 수비
-                a.defend_mode = 2
-            elif event.key == pygame.K_d:  # c 키가 눌리면 하단 수비
-                a.defend_mode = 3
+            if not a.hit_bool:
+                if event.key == pygame.K_LEFT:      # <- 방향키일 때
+                    a.to_x -= a.x_speed * dt
+                    a.vector = -100
+                elif event.key == pygame.K_RIGHT:   # -> 방향키일 때
+                    a.to_x += a.x_speed * dt
+                    a.vector = 100
+                elif event.key == pygame.K_UP:  # up 방향키일 때
+                    if a.y_pos == screen_height - stage_height - a.height:
+                        a.to_y += a.y_speed * dt
+                        a.jump_bool = True
+                elif event.key == pygame.K_z:   # z 키가 눌리면 상단 공격
+                    a.attack_temp = 1
+                elif event.key == pygame.K_x:   # x 키가 눌리면 중단 공격
+                    a.attack_temp = 2
+                elif event.key == pygame.K_c:   # c 키가 눌리면 하단 공격
+                    a.attack_temp = 3
+                elif event.key == pygame.K_a:  # a 키가 눌리면 상단 수비
+                    a.defend_mode = 1
+                elif event.key == pygame.K_s:  # b 키가 눌리면 중단 수비
+                    a.defend_mode = 2
+                elif event.key == pygame.K_d:  # c 키가 눌리면 하단 수비
+                    a.defend_mode = 3
 
         if event.type == pygame.KEYUP:          # 버튼을 뗐을 때
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
@@ -107,6 +106,7 @@ while running:
 
     # 3. 게임 캐릭터 위치 정의
     a.move_char(screen_height, screen_width, stage_height, dt)
+    b.move_char(screen_height, screen_width, stage_height, dt)
 
     # 4. 충돌 처리
 
@@ -114,32 +114,30 @@ while running:
     screen.blit(background, (0, 0))
     screen.blit(stage, (0, screen_height - stage_height))
 
-    a.draw_char(screen, b)
-
     # 랜덤 행동
-    rnd1 = random.randint(1, 2)
+    rnd1 = random.randint(1, 1)
     rnd2 = random.randint(1, 3)
     b.vector = -100
-    if rnd_bool:    # 공격 / 수비가 가능하면
+    if rnd_bool and not b.hit_bool:    # 공격 / 수비가 가능하면
         rnd_ticks = pygame.time.get_ticks()
         rnd_bool = False
+        print(rnd_ticks, rnd_bool)
         if rnd1 == 1:      # rnd1, rnd2에 따라 공격 또는 수비
             b.attack_temp = rnd2
         else:
             b.defend_mode = rnd2
+    elif (pygame.time.get_ticks() - rnd_ticks) / 1000 > rnd_delay:
+        b.defend_mode = 0
+        rnd_bool = True
     else:
-        if (pygame.time.get_ticks() - rnd_ticks) / 1000 > rnd_delay:
-            b.defend_mode = 0
-            b.attack_temp = 0
-            rnd_bool = True
-
+        b.attack_temp = 0
 
     b.draw_char(screen, a)
+    a.draw_char(screen, b)
 
     # 체력바 그리기
     screen.blit(hp_bar, (50, 50))
     screen.blit(hp_bar, (550, 50))
-
     if a.hp > 0:
         a_hp_width = a.hp / 100 * 400
         a_hp_x_pos = 450 - a_hp_width
@@ -150,7 +148,6 @@ while running:
             else:
                 screen.blit(hp_point_red, (a_hp_x_pos, 50))
             a_hp_x_pos += 20
-
     if b.hp > 0:
         b_hp_width = b.hp / 100 * 400
         b_hp_x_pos = 550
