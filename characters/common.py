@@ -328,8 +328,10 @@ class Fighter:
     # screen_width : 화면 너비
     # stage_height : 스테이지 높이
     # dt : 이동 프레임 수
-    def move_char(self, screen_height, screen_width, stage_height, dt):
+    def move_char(self, screen_height, screen_width, stage_height, dt, enermy):
         # 수비 중이 아닐 때만 이동 가능
+
+        # y축 방향
         if self.jump_bool and self.defend_mode == 0 and not self.hit_bool:
             self.to_y = -12
             self.jump_bool = False
@@ -340,13 +342,24 @@ class Fighter:
             self.to_y = 0
         self.y_pos += self.to_y
 
+        # x축 방향
         if self.defend_mode == 0 and not self.hit_bool:
             self.x_pos += self.to_x
 
+        # 피격시 뒤로 넉백
         if self.hit_bool:
             self.x_pos += self.position / 15 * dt
 
-        if self.x_pos < 0:  # 벽에 막힐 경우
+        # 벽에 막힐 경우
+        if self.x_pos < 0:
             self.x_pos = 0
         elif self.x_pos > screen_width - self.width:
             self.x_pos = screen_width - self.width
+
+        # 적을 넘어갈 수 없음
+        if self.position == -1:
+            if self.x_pos + self.width > enermy.x_pos:
+                self.x_pos = enermy.x_pos - self.width
+        else:
+            if self.x_pos < enermy.x_pos + enermy.width:
+                self.x_pos = enermy.x_pos + enermy.width

@@ -62,9 +62,9 @@ b.position = 1
 b.vector = -100
 
 # 적 캐릭터의 랜덤 행동 부분
-rnd_ticks = 0
-rnd_delay = 3
-rnd_bool = True
+rnd_ticks = 0       # 행동 시작한 시간
+rnd_delay = 3       # 행동 딜레이
+rnd_bool = True     # 행동 가능한지 여부
 
 game_result = 'Quit'
 
@@ -130,10 +130,11 @@ while running:
             current_key_down = ''
 
 # 3. 게임 캐릭터 위치 정의
-    a.move_char(screen_height, screen_width, stage_height, dt)
-    b.move_char(screen_height, screen_width, stage_height, dt)
+    a.move_char(screen_height, screen_width, stage_height, dt, b)
+    b.move_char(screen_height, screen_width, stage_height, dt, a)
 
     # 4. 충돌 처리
+
 
     # 5. 화면에 그리기
     screen.blit(background, (0, 0))
