@@ -17,13 +17,13 @@ class Fighter:
     y_pos = 0  # 캐릭터 y 좌표
     vector = 100  # 캐릭터가 바라보는 방향 - -100:왼쪽, 100:오른쪽
     defend_mode = 0  # 수비모드 - 0:수비안함, 1:상단수비, 2:중단수비, 3:하단수비
-    attack_mode = 0  # 공격모드 - 0:공격안함, 1:상단공격, 2:중단공격, 3:하단공격
+    attack_mode = 0  # 공격모드 - 0:공격안함, 1:상단공격, 2:중단공격, 3:하단공격, 4:궁극기공격
     high_rage = 60  # 상단 범위
     middle_rage = 120  # 중단 범위
     low_rage = 90  # 하단 범위
-    damages = [0, 15, 5, 10]  # 0, 상단, 중단, 하단 공격 데미지
+    damages = [0, 15, 5, 10, 30]  # 0, 상단, 중단, 하단, 궁극기 공격 데미지
     critical_p = 4  # 크리티컬 확률 = 1/critical_p
-    critical_d = 2  # 크리티컬 데미지 (2배)
+    critical_d = 2  # 크리티컬 데미지 ( critical_d배)
 
     # 공격 모션
     attack_delay = 0.5  # 모션 시간
@@ -44,10 +44,10 @@ class Fighter:
     ready_bool = False  # 공격 전 준비동작 중인지 여부 - True:공격준비중, False:준비중아님
     jump_bool = False  # 점프 중인지 판단하는 변수 - True:점프중, False:점프중아님
     hit_bool = False  # 피격 상태 여부 - True:피격중, False:피격중아님
+    # statuses = ('none', 'ready', 'attack', 'hit', 'jump')
 
     position = -1   # 캐릭터의 적과의 상대적 위치 - -1:왼쪽, 1:오른쪽
-
-    # statuses = ('none', 'ready', 'attack', 'hit', 'jump')
+    energy = 0  # 궁극기 에너지 - 0~100
 
     # pygame 캐릭터 생성
     # images_path : 캐릭터 이지미 경로 / image : 이미지 명
@@ -64,6 +64,8 @@ class Fighter:
         self.attack_middle_ready = pygame.image.load(os.path.join(images_path, 'attack_middle_ready.png'))
         self.attack_low_ready = pygame.image.load(os.path.join(images_path, 'attack_low_ready.png'))
         self.attack_effect = pygame.image.load(os.path.join(images_path, 'attack_effect.png'))
+        self.attack_special_img = pygame.image.load(os.path.join(images_path, 'attack_special.png'))
+        self.attack_special_ready = pygame.image.load(os.path.join(images_path, 'attack_special_ready.png'))
         self.font = pygame.font.Font(None, 30)  # 효과 폰트
         self.defend_effect = self.font.render('defend!!', True, (0, 0, 0))  # 수비 성공시 이펙트 메시지
         self.critical_effect = self.font.render('critical!!', True, (0, 0, 0))  # 크리티컬시 이펙트 메시지
@@ -99,7 +101,35 @@ class Fighter:
             else:
                 damage = self.damages[attack_type]
 
-            enemy.get_hit(attack_type, critical, damage)
+            if not enemy.hit_bool:
+                self.energy += 10
+                if self.energy > 100:
+                    self.energy = 100
+                enemy.get_hit(attack_type, critical, damage)
+
+    # 궁극기 공격
+    # enermy : 적의 캐릭터
+    def attack_special(self, enemy):
+        # 궁극기 rect를 만들어서
+        rect = self.attack_special_img.get_rect()
+        if self.vector == 100:
+            rect.left = self.x_pos + self.vector
+        else:
+            width = self.attack_special_img.get_width()
+            rect.left = self.x_pos - width
+        rect.top = self.y_pos + self.high_rage
+
+        # 적 rect와
+        enemy_rect = enemy.char.get_rect()
+        enemy_rect.left = enemy.x_pos
+        enemy_rect.top = enemy.y_pos
+
+        # 충돌했으면 무조건 데미지
+        if rect.colliderect(enemy_rect):
+            if not enemy.hit_bool:
+                critical = False
+                damage = self.damages[4]
+                enemy.get_hit(2, critical, damage)
 
     # 공격 성공 여부 체크
     # attack_type : 공격 종류 - 1:상단, 2:중단, 3:하단
@@ -155,16 +185,19 @@ class Fighter:
     # 피격 판정
     # hit_type : 받은 공격의 종류 - 1:상단, 2:중단, 3:하단
     def get_hit(self, hit_type, critical, damage):
-        if not self.hit_bool:
-            self.damage(damage)
-            self.hit_ticks = pygame.time.get_ticks()
-            self.hit_bool = True
-            self.hit_type = hit_type
-            self.attack_bool = False
-            self.attack_mode = 0
-            self.ready_bool = 0
-            self.jump_bool = 0
-            self.critical_hit = critical
+        # if not self.hit_bool:
+        self.energy += damage
+        if self.energy > 100:
+            self.energy = 100
+        self.damage(damage)
+        self.hit_ticks = pygame.time.get_ticks()
+        self.hit_bool = True
+        self.hit_type = hit_type
+        self.attack_bool = False
+        self.attack_mode = 0
+        self.ready_bool = 0
+        self.jump_bool = 0
+        self.critical_hit = critical
 
     # 캐릭터 그리기
     # screen        : 화면
@@ -220,22 +253,36 @@ class Fighter:
                         elif self.attack_mode == 3:
                             screen.blit(self.attack_low_ready,
                                         (self.x_pos, self.y_pos + self.high_rage + self.middle_rage))
+                        elif self.attack_mode == 4:
+                            screen.blit(self.attack_special_ready, (self.x_pos, self.y_pos))
+
 
                 # 공격 모션 중인지 확인
                 if self.attack_bool:
                     attack_time = (pygame.time.get_ticks() - self.attack_ticks) / 1000 - self.ready_delay
                     if attack_time > self.attack_delay:
+                        if self.attack_mode == 4:
+                            self.energy = 0
                         self.attack_mode = 0
                         self.attack_bool = False
                     else:
-                        self.attack(self.attack_mode, enemy)
-                        if self.attack_mode == 1:
-                            screen.blit(self.attack_high_img, (self.x_pos + self.vector, self.y_pos))
-                        elif self.attack_mode == 2:
-                            screen.blit(self.attack_middle_img, (self.x_pos + self.vector, self.y_pos + self.high_rage))
-                        elif self.attack_mode == 3:
-                            screen.blit(self.attack_low_img,
-                                        (self.x_pos + self.vector, self.y_pos + self.high_rage + self.middle_rage))
+                        if self.attack_mode == 4:
+                            self.attack_special(enemy)
+                            if self.vector == 100:
+                                screen.blit(self.attack_special_img, (self.x_pos + self.vector, self.y_pos + self.high_rage))
+                            else:
+                                width = self.attack_special_img.get_width()
+                                screen.blit(self.attack_special_img, (self.x_pos - width, self.y_pos + self.high_rage))
+
+                        else:
+                            self.attack(self.attack_mode, enemy)
+                            if self.attack_mode == 1:
+                                screen.blit(self.attack_high_img, (self.x_pos + self.vector, self.y_pos))
+                            elif self.attack_mode == 2:
+                                screen.blit(self.attack_middle_img, (self.x_pos + self.vector, self.y_pos + self.high_rage))
+                            elif self.attack_mode == 3:
+                                screen.blit(self.attack_low_img,
+                                            (self.x_pos + self.vector, self.y_pos + self.high_rage + self.middle_rage))
 
                 # 공겨 준비 중 아니고
                 # 공격 모션 중 아니면 공격 가능
@@ -270,6 +317,9 @@ class Fighter:
                                          self.y_pos + self.high_rage + self.middle_rage - 10))
 
                     else:
+                        self.energy += 20
+                        if self.energy > 100:
+                            self.energy = 100
                         self.effect_bool = False
                         self.effect_ticks = 0
 

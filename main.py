@@ -37,6 +37,10 @@ hp_bar = pygame.image.load(os.path.join(images_path, 'hp_bar.png'))
 hp_point = pygame.image.load(os.path.join(images_path, 'hp_point.png'))
 hp_point_red = pygame.image.load(os.path.join(images_path, 'hp_point_red.png'))
 
+# 궁극기 게이지
+energy_bar = pygame.image.load(os.path.join(images_path, 'energy_bar.png'))
+energy_point = pygame.image.load(os.path.join(images_path, 'energy_point.png'))
+energy_point_red = pygame.image.load(os.path.join(images_path, 'energy_point_red.png'))
 
 # 폰트
 game_font = pygame.font.Font(None, 100)
@@ -54,6 +58,8 @@ b = common.Fighter(images_path, 'character.png')
 b.name = '2p'
 b.x_pos = screen_width * 2 / 3 - b.width / 2        # 현재 x좌표
 b.y_pos = screen_height - b.height - stage_height   # 현재 y좌표
+b.position = 1
+b.vector = -100
 
 # 적 캐릭터의 랜덤 행동 부분
 rnd_ticks = 0
@@ -62,10 +68,14 @@ rnd_bool = True
 
 game_result = 'Quit'
 
+# 현재 눌린 키
+key_down_font = pygame.font.Font(None, 50)
+current_key_down = ''
+
 # 이벤트 루프
 running = True   # 게임 진행 변수
 while running:
-    dt = clock.tick(60) # 초당 프레임수
+    dt = clock.tick(120) # 초당 프레임수
 
     # 2. 이벤트 처리
     for event in pygame.event.get():
@@ -76,35 +86,50 @@ while running:
                 if event.key == pygame.K_LEFT:      # <- 방향키일 때
                     a.to_x -= a.x_speed * dt
                     a.vector = -100
+                    current_key_down = 'LEFT'
                 elif event.key == pygame.K_RIGHT:   # -> 방향키일 때
                     a.to_x += a.x_speed * dt
                     a.vector = 100
+                    current_key_down = 'RIGHT'
                 elif event.key == pygame.K_UP:  # up 방향키일 때
                     if a.y_pos == screen_height - stage_height - a.height:
                         a.to_y += a.y_speed * dt
                         a.jump_bool = True
+                    current_key_down = 'UP'
                 elif event.key == pygame.K_z:   # z 키가 눌리면 상단 공격
                     a.attack_temp = 1
+                    current_key_down = 'Z'
                 elif event.key == pygame.K_x:   # x 키가 눌리면 중단 공격
                     a.attack_temp = 2
+                    current_key_down = 'X'
                 elif event.key == pygame.K_c:   # c 키가 눌리면 하단 공격
                     a.attack_temp = 3
+                    current_key_down = 'C'
+                elif event.key == pygame.K_v:  # c 키가 눌리면 하단 수비
+                    if a.energy == 100:
+                        a.attack_temp = 4
+                    current_key_down = 'V'
                 elif event.key == pygame.K_a:  # a 키가 눌리면 상단 수비
                     a.defend_mode = 1
+                    current_key_down = 'A'
                 elif event.key == pygame.K_s:  # b 키가 눌리면 중단 수비
                     a.defend_mode = 2
+                    current_key_down = 'S'
                 elif event.key == pygame.K_d:  # c 키가 눌리면 하단 수비
                     a.defend_mode = 3
+                    current_key_down = 'D'
 
-        if event.type == pygame.KEYUP:          # 버튼을 뗐을 때
+    if event.type == pygame.KEYUP:          # 버튼을 뗐을 때
             if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                 a.to_x = 0
-            elif event.key == pygame.K_z or event.key == pygame.K_x or event.key == pygame.K_c:
+            elif event.key == pygame.K_z or event.key == pygame.K_x \
+                    or event.key == pygame.K_c or event.key == pygame.K_v:
                 a.attack_temp = 0
             elif event.key == pygame.K_a or event.key == pygame.K_s or event.key == pygame.K_d:
                 a.defend_mode = 0
+            current_key_down = ''
 
-    # 3. 게임 캐릭터 위치 정의
+# 3. 게임 캐릭터 위치 정의
     a.move_char(screen_height, screen_width, stage_height, dt)
     b.move_char(screen_height, screen_width, stage_height, dt)
 
@@ -117,7 +142,6 @@ while running:
     # 랜덤 행동
     rnd1 = random.randint(1, 1)
     rnd2 = random.randint(1, 3)
-    b.vector = -100
     if rnd_bool and not b.hit_bool:    # 공격 / 수비가 가능하면
         rnd_ticks = pygame.time.get_ticks()
         rnd_bool = False
@@ -126,6 +150,7 @@ while running:
         else:
             b.defend_mode = rnd2
     elif (pygame.time.get_ticks() - rnd_ticks) / 1000 > rnd_delay:
+        print(a.energy, b.energy)
         b.defend_mode = 0
         rnd_bool = True
     else:
@@ -157,6 +182,35 @@ while running:
             else:
                 screen.blit(hp_point_red, (b_hp_x_pos, 50))
             b_hp_x_pos += 20
+
+    # 궁극기 게이지 그리기
+    screen.blit(energy_bar, (50, 125))
+    screen.blit(energy_bar, (850, 125))
+
+    a_energy_width = a.energy
+    a_energy_x_pos = 50 + a_hp_width
+    while a_energy_width > 0:
+        a_energy_width -= 5
+        if a.energy != 100:
+            screen.blit(energy_point, (a_energy_x_pos, 125))
+        else:
+            screen.blit(energy_point_red, (a_energy_x_pos, 125))
+        a_energy_x_pos += 5
+    b_energy_width = b.energy
+    b_energy_x_pos = 850 + 100 - b_energy_width
+    while b_energy_width > 0:
+        b_energy_width -= 5
+        if b.energy != 100:
+            screen.blit(energy_point, (b_energy_x_pos, 125))
+        else:
+            screen.blit(energy_point_red, (b_energy_x_pos, 125))
+        b_energy_x_pos += 5
+
+    # 눌린 키 출력
+    msg = key_down_font.render(current_key_down, True, (0, 0, 0))
+    msg_rect = msg.get_rect(center=(50, int(screen_height - 20)))
+    screen.blit(msg, msg_rect)
+
 
     # 생사여부 판단 후 게임 종료
     if not a.status_check() or not b.status_check():
