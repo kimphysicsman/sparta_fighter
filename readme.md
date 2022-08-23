@@ -8,10 +8,13 @@
 ### 1. 제작기간
 > 2022.04.25 ~ 04.27
 
-### 2. 목적
+### 2. 개발자
+> [김동우](https://github.com/kimphysicsman)
+
+### 3. 목적
 > 직접 게임을 설계해보고 python을 이용하여 설계한 내용을 구현해봄으로써 설계과 구현에 익숙해지고 python 실력을 향상시키고자 함
 
-### 3. 데모
+### 4. 데모
 > <img width="600px" src="https://user-images.githubusercontent.com/68724828/186097034-1239a3e6-c267-41bc-b04b-995d4b602a24.png" />
 
 <br />
